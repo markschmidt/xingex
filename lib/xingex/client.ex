@@ -57,7 +57,7 @@ defmodule XingEx.Client do
   defp fetch_access_token(request_token_str, verifier) do
     RequestToken[token: token, secret: secret] = XingEx.TokenStore.get_token(request_token_str)
 
-    case HTTPotion.post("https://api.xing.com/v1/access_token", access_token_signature(token, secret, verifier)) do
+    case HTTPotion.post(url_for([:host, :access_token_path]), access_token_signature(token, secret, verifier)) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body }
