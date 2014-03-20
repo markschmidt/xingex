@@ -3,6 +3,9 @@ XingEx
 
 Elixir wrapper for the XING API
 
+Before you can start using the client, you need a [XING account](https://www.xing.com) and create an application in the [developer portal](https://dev.xing.com/applications) to have a consumer_key and consumer_secret.
+
+
 *Note: this is still work in progess and more of an experiment than usable code!*
 
 Usage
