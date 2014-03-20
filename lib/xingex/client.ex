@@ -118,7 +118,7 @@ defmodule XingEx.Client do
       |> Enum.map(fn(x) -> if is_atom(x), do: Config.urls[x], else: x end)
       |> Enum.join
   end
-  def url_for(key), do: url_for([key])
+  defp url_for(key), do: url_for([key])
 
   defp prepend_if_missing(list, key) do
     case list do
