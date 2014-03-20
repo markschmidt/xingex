@@ -43,16 +43,19 @@ defmodule XingEx.Client do
   end
 
 
-  def append_params(url, params) do
-    param_str = Keyword.keys(params)
+  defp join_params(params) do
+    Keyword.keys(params)
       |> Enum.map(fn(key) -> atom_to_binary(key) <> "=" <> params[key] end)
       |> Enum.join("&")
-    url <> "?" <> param_str
+  end
+
+  defp append_params(url, params) do
+    separator = if String.contains?(url, "?"), do: "&", else: "?"
+    url <> separator <> join_params(params)
   end
 
   defp sign_url(url, token) do
-    separator = if String.contains?(url, "?"), do: "&", else: "?"
-    url <> separator <> oauth_signature(token.token, token.secret)
+    url |> append_params(oauth_params(token.token, token.secret))
   end
 
   defp parse_json_response(body) do
@@ -81,27 +84,35 @@ defmodule XingEx.Client do
     token
   end
 
-  defp oauth_signature(token \\ "", token_secret \\ "") do
-    "oauth_consumer_key=" <> Config.consumer[:key] <>
-      "&oauth_token=" <> token <>
-      "&oauth_signature_method=PLAINTEXT" <>
-      "&oauth_signature=" <> Config.consumer[:secret] <> "%26" <> token_secret <>
-      "&oauth_nonce=123" <>
-      "&oauth_timestamp=" <> (Timex.Time.now(:secs) |> Float.ceil |> integer_to_binary) <>
-      "&oauth_version=1.0"
+  defp oauth_params(token \\ "", token_secret \\ "") do
+    [
+      oauth_consumer_key: Config.consumer[:key],
+      oauth_token: token,
+      oauth_signature_method: "PLAINTEXT",
+      oauth_signature: Config.consumer[:secret] <> "%26" <> token_secret,
+      oauth_nonce: "123",
+      oauth_timestamp: (Timex.Time.now(:secs) |> Float.ceil |> integer_to_binary),
+      oauth_version: "1.0"
+    ]
+  end
+
+  defp request_token_params(callback_url) do
+    oauth_params ++ [oauth_callback: URI.encode(callback_url)]
   end
 
   defp request_token_signature(callback_url) do
-    oauth_signature <>
-      "&oauth_callback=" <> URI.encode(callback_url)
+    request_token_params(callback_url) |> join_params
+  end
+
+  defp access_token_params(token, token_secret, verifier) do
+    oauth_params(token, token_secret) ++ [oauth_verifier: verifier]
   end
 
   defp access_token_signature(token, token_secret, verifier) do
-    oauth_signature(token, token_secret) <>
-      "&oauth_verifier=" <> verifier
+    access_token_params(token, token_secret, verifier) |> join_params
   end
 
-  def url_for(keys) when is_list(keys) do
+  defp url_for(keys) when is_list(keys) do
     keys
       |> prepend_if_missing(:host)
       |> Enum.map(fn(x) -> if is_atom(x), do: Config.urls[x], else: x end)
