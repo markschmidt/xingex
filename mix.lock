@@ -1,0 +1,5 @@
+[ "ex_conf": {:git, "git://github.com/phoenixframework/ex_conf.git", "57ab21470aed091074ddc393e2944fa56708a1db", []},
+  "httpotion": {:git, "git://github.com/myfreeweb/httpotion.git", "94b0fdb7bb1f5322791e3a309f2e06d0b8ab9ef3", []},
+  "ibrowse": {:git, "git://github.com/cmullaparthi/ibrowse.git", "7871e2ebe8811efb64e1917e2de455fa87e8dfe3", [tag: "v4.1.0"]},
+  "json": {:git, "git://github.com/cblage/elixir-json.git", "725ea02b992aba35c18d0e9c7c3da54689670baf", []},
+  "timex": {:git, "git://github.com/bitwalker/timex.git", "7f9398da05a9c29ad5129effe4fee20cabfe6a75", []} ]

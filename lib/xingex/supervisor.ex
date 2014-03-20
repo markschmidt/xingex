@@ -7,8 +7,7 @@ defmodule Xingex.Supervisor do
 
   def init([]) do
     children = [
-      # Define workers and child supervisors to be supervised
-      # worker(Xingex.Worker, [])
+      worker(XingEx.TokenStore, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/Supervisor.Behaviour.html

@@ -10,15 +10,18 @@ defmodule Xingex.Mixfile do
 
   # Configuration for the OTP application
   def application do
-    [mod: { Xingex, [] }]
+    [
+      applications: [:httpotion],
+      mod: { Xingex, [] }
+    ]
   end
 
-  # Returns the list of dependencies in the format:
-  # { :foobar, git: "https://github.com/elixir-lang/foobar.git", tag: "0.1" }
-  #
-  # To specify particular versions, regardless of the tag, do:
-  # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
-    []
+    [
+      { :httpotion, "~> 0.2", github: "myfreeweb/httpotion" },
+      { :timex,               github: "bitwalker/timex" },
+      { :json,                github: "cblage/elixir-json" },
+      { :ex_conf,              github: "phoenixframework/ex_conf" }
+    ]
   end
 end
