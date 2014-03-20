@@ -6,9 +6,12 @@ defmodule XingEx.Client do
   defrecord AccessToken, token: nil, secret: nil, user_id: nil
 
   def get_request_token(callback_url \\ "oob") do
-    case fetch_request_token(callback_url) do
-      { :ok, body } -> { :ok, body |> parse_request_token_response |> store_token }
-      error -> error
+    case HTTPotion.post(url_for([:host, :request_token_path]), request_token_signature(callback_url)) do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_request_token_response |> store_token }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
     end
   end
 
@@ -17,9 +20,14 @@ defmodule XingEx.Client do
   end
 
   def get_access_token(request_token_str, verifier) do
-    case fetch_access_token(request_token_str, verifier) do
-      { :ok, body } -> { :ok, body |> parse_access_token_response }
-      error -> error
+    RequestToken[token: token, secret: secret] = XingEx.TokenStore.get_token(request_token_str)
+
+    case HTTPotion.post(url_for([:host, :access_token_path]), access_token_signature(token, secret, verifier)) do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_access_token_response }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
     end
   end
 
@@ -42,28 +50,6 @@ defmodule XingEx.Client do
   defp parse_json_response(body) do
     { :ok, dict } = body |> JSON.decode
     dict
-  end
-
-  defp fetch_request_token(callback_url) do
-    case HTTPotion.post(url_for([:host, :request_token_path]), request_token_signature(callback_url)) do
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 200..299 ->
-        { :ok, body }
-      Response[body: body, status_code: _status, headers: _headers ] ->
-        { :error, body }
-    end
-  end
-
-  defp fetch_access_token(request_token_str, verifier) do
-    RequestToken[token: token, secret: secret] = XingEx.TokenStore.get_token(request_token_str)
-
-    case HTTPotion.post(url_for([:host, :access_token_path]), access_token_signature(token, secret, verifier)) do
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 200..299 ->
-        { :ok, body }
-      Response[body: body, status_code: _status, headers: _headers ] ->
-        { :error, body }
-    end
   end
 
   defp parse_request_token_response(body) do
