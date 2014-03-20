@@ -16,7 +16,7 @@ defmodule XingEx.Client do
   end
 
   def get_authorize_url(request_token) do
-    url_for(:authorize_path) <> "?oauth_token=" <> request_token.token
+    url_for(:authorize_path) |> append_params(oauth_token: request_token.token)
   end
 
   def get_access_token(request_token_str, verifier) do
