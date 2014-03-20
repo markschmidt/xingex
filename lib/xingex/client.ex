@@ -23,6 +23,27 @@ defmodule XingEx.Client do
     end
   end
 
+  def get(access_token, path) do
+    url = Config.urls[:host] <> path |> sign_url(access_token)
+    case HTTPotion.get(url) do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_json_response }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
+    end
+  end
+
+
+  defp sign_url(url, token) do
+    url <> "?" <> oauth_signature(token.token, token.secret)
+  end
+
+  defp parse_json_response(body) do
+    { :ok, dict } = body |> JSON.decode
+    dict
+  end
+
   defp fetch_request_token(callback_url) do
     case HTTPotion.post(build_url([:host, :request_token_path]), request_token_signature(callback_url)) do
       Response[body: body, status_code: status, headers: _headers ]
