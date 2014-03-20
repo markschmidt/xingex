@@ -31,8 +31,8 @@ defmodule XingEx.Client do
     end
   end
 
-  def get(access_token, path) do
-    url = url_for(path) |> sign_url(access_token)
+  def get(access_token, path, params \\ []) do
+    url = url_for(path) |> append_params(params) |> sign_url(access_token)
     case HTTPotion.get(url) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
@@ -43,8 +43,16 @@ defmodule XingEx.Client do
   end
 
 
+  def append_params(url, params) do
+    param_str = Keyword.keys(params)
+      |> Enum.map(fn(key) -> atom_to_binary(key) <> "=" <> params[key] end)
+      |> Enum.join("&")
+    url <> "?" <> param_str
+  end
+
   defp sign_url(url, token) do
-    url <> "?" <> oauth_signature(token.token, token.secret)
+    separator = if String.contains?(url, "?"), do: "&", else: "?"
+    url <> separator <> oauth_signature(token.token, token.secret)
   end
 
   defp parse_json_response(body) do
