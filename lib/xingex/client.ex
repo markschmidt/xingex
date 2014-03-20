@@ -6,7 +6,7 @@ defmodule XingEx.Client do
   defrecord AccessToken, token: nil, secret: nil, user_id: nil
 
   def get_request_token(callback_url \\ "oob") do
-    case HTTPotion.post(url_for([:host, :request_token_path]), request_token_signature(callback_url)) do
+    case HTTPotion.post(url_for(:request_token_path), request_token_signature(callback_url)) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body |> parse_request_token_response |> store_token }
@@ -16,13 +16,13 @@ defmodule XingEx.Client do
   end
 
   def get_authorize_url(request_token) do
-    url_for([:host, :authorize_path]) <> "?oauth_token=" <> request_token.token
+    url_for(:authorize_path) <> "?oauth_token=" <> request_token.token
   end
 
   def get_access_token(request_token_str, verifier) do
     RequestToken[token: token, secret: secret] = XingEx.TokenStore.get_token(request_token_str)
 
-    case HTTPotion.post(url_for([:host, :access_token_path]), access_token_signature(token, secret, verifier)) do
+    case HTTPotion.post(url_for(:access_token_path), access_token_signature(token, secret, verifier)) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body |> parse_access_token_response }
@@ -32,7 +32,7 @@ defmodule XingEx.Client do
   end
 
   def get(access_token, path) do
-    url = url_for([:host, path]) |> sign_url(access_token)
+    url = url_for(path) |> sign_url(access_token)
     case HTTPotion.get(url) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
@@ -81,7 +81,6 @@ defmodule XingEx.Client do
       "&oauth_nonce=123" <>
       "&oauth_timestamp=" <> (Timex.Time.now(:secs) |> Float.ceil |> integer_to_binary) <>
       "&oauth_version=1.0"
-
   end
 
   defp request_token_signature(callback_url) do
@@ -96,8 +95,16 @@ defmodule XingEx.Client do
 
   def url_for(keys) when is_list(keys) do
     keys
+      |> prepend_if_missing(:host)
       |> Enum.map(fn(x) -> if is_atom(x), do: Config.urls[x], else: x end)
       |> Enum.join
   end
   def url_for(key), do: url_for([key])
+
+  defp prepend_if_missing(list, key) do
+    case list do
+      [^key|_] -> list
+      _        -> [key | list]
+    end
+  end
 end
