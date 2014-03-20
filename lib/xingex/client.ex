@@ -13,7 +13,7 @@ defmodule XingEx.Client do
   end
 
   def get_authorize_url(request_token) do
-    build_url([:host, :authorize_path]) <> "?oauth_token=" <> request_token.token
+    url_for([:host, :authorize_path]) <> "?oauth_token=" <> request_token.token
   end
 
   def get_access_token(request_token_str, verifier) do
@@ -24,7 +24,7 @@ defmodule XingEx.Client do
   end
 
   def get(access_token, path) do
-    url = Config.urls[:host] <> path |> sign_url(access_token)
+    url = url_for([:host, path]) |> sign_url(access_token)
     case HTTPotion.get(url) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
@@ -45,7 +45,7 @@ defmodule XingEx.Client do
   end
 
   defp fetch_request_token(callback_url) do
-    case HTTPotion.post(build_url([:host, :request_token_path]), request_token_signature(callback_url)) do
+    case HTTPotion.post(url_for([:host, :request_token_path]), request_token_signature(callback_url)) do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body }
@@ -108,8 +108,10 @@ defmodule XingEx.Client do
       "&oauth_verifier=" <> verifier
   end
 
-  def build_url(keys) when is_list(keys) do
-    keys |> Enum.map(&Config.urls[&1]) |> Enum.join
+  def url_for(keys) when is_list(keys) do
+    keys
+      |> Enum.map(fn(x) -> if is_atom(x), do: Config.urls[x], else: x end)
+      |> Enum.join
   end
-  def build_url(key), do: build_url([key])
+  def url_for(key), do: url_for([key])
 end
