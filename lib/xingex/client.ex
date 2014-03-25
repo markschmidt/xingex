@@ -33,49 +33,27 @@ defmodule XingEx.Client do
 
   def get(access_token, path, params \\ []) do
     url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    case HTTPotion.get(url) do
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 200..299 ->
-        { :ok, body |> parse_json_response }
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 400..499 ->
-        { :error, body |> parse_json_response }
-      Response[body: body, status_code: _status, headers: _headers ] ->
-        { :error, body }
-    end
+    HTTPotion.get(url) |> handle_response
   end
 
   def delete(access_token, path, params \\ []) do
     url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    case HTTPotion.delete(url) do
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 200..299 ->
-        { :ok, body |> parse_json_response }
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 400..499 ->
-        { :error, body |> parse_json_response }
-      Response[body: body, status_code: _status, headers: _headers ] ->
-        { :error, body }
-    end
+    HTTPotion.delete(url) |> handle_response
   end
 
   def post(access_token, path, params \\ []) do
     body = join_params(params ++ oauth_params(access_token.token, access_token.secret))
-    case HTTPotion.post(url_for(path), body) do
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 200..299 ->
-        { :ok, body |> parse_json_response }
-      Response[body: body, status_code: status, headers: _headers ]
-      when status in 400..499 ->
-        { :error, body |> parse_json_response }
-      Response[body: body, status_code: _status, headers: _headers ] ->
-        { :error, body }
-    end
+    HTTPotion.post(url_for(path), body) |> handle_response
   end
 
   def put(access_token, path, params \\ []) do
     url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    case HTTPotion.put(url, "") do
+    HTTPotion.put(url, "") |> handle_response
+  end
+
+
+  defp handle_response(response) do
+    case response do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body |> parse_json_response }
@@ -86,7 +64,6 @@ defmodule XingEx.Client do
         { :error, body }
     end
   end
-
 
   defp join_params(params) do
     Keyword.keys(params)
