@@ -32,23 +32,32 @@ defmodule XingEx.Client do
   end
 
   def get(access_token, path, params \\ []) do
-    url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    HTTPotion.get(url) |> handle_response
+    url_for(path)
+      |> append_params(params)
+      |> sign_url(access_token)
+      |> HTTPotion.get
+      |> handle_response
   end
 
   def delete(access_token, path, params \\ []) do
-    url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    HTTPotion.delete(url) |> handle_response
+    url_for(path)
+      |> append_params(params)
+      |> sign_url(access_token)
+      |> HTTPotion.delete
+      |> handle_response
+  end
+
+  def put(access_token, path, params \\ []) do
+    url_for(path)
+      |> append_params(params)
+      |> sign_url(access_token)
+      |> HTTPotion.put("")
+      |> handle_response
   end
 
   def post(access_token, path, params \\ []) do
     body = join_params(params ++ oauth_params(access_token.token, access_token.secret))
     HTTPotion.post(url_for(path), body) |> handle_response
-  end
-
-  def put(access_token, path, params \\ []) do
-    url = url_for(path) |> append_params(params) |> sign_url(access_token)
-    HTTPotion.put(url, "") |> handle_response
   end
 
 
