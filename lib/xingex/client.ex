@@ -37,6 +37,51 @@ defmodule XingEx.Client do
       Response[body: body, status_code: status, headers: _headers ]
       when status in 200..299 ->
         { :ok, body |> parse_json_response }
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 400..499 ->
+        { :error, body |> parse_json_response }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
+    end
+  end
+
+  def delete(access_token, path, params \\ []) do
+    url = url_for(path) |> append_params(params) |> sign_url(access_token)
+    case HTTPotion.delete(url) do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_json_response }
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 400..499 ->
+        { :error, body |> parse_json_response }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
+    end
+  end
+
+  def post(access_token, path, params \\ []) do
+    body = join_params(params ++ oauth_params(access_token.token, access_token.secret))
+    case HTTPotion.post(url_for(path), body) do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_json_response }
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 400..499 ->
+        { :error, body |> parse_json_response }
+      Response[body: body, status_code: _status, headers: _headers ] ->
+        { :error, body }
+    end
+  end
+
+  def put(access_token, path, params \\ []) do
+    url = url_for(path) |> append_params(params) |> sign_url(access_token)
+    case HTTPotion.put(url, "") do
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 200..299 ->
+        { :ok, body |> parse_json_response }
+      Response[body: body, status_code: status, headers: _headers ]
+      when status in 400..499 ->
+        { :error, body |> parse_json_response }
       Response[body: body, status_code: _status, headers: _headers ] ->
         { :error, body }
     end
@@ -45,8 +90,12 @@ defmodule XingEx.Client do
 
   defp join_params(params) do
     Keyword.keys(params)
-      |> Enum.map(fn(key) -> atom_to_binary(key) <> "=" <> params[key] end)
+      |> Enum.map(&concat_key_value(&1, params[&1]))
       |> Enum.join("&")
+  end
+
+  defp concat_key_value(key, value) do
+    URI.encode(atom_to_binary(key)) <> "=" <> URI.encode(value)
   end
 
   defp append_params(url, params) do
@@ -58,9 +107,12 @@ defmodule XingEx.Client do
     url |> append_params(oauth_params(token.token, token.secret))
   end
 
+  defp parse_json_response(""), do: ""
   defp parse_json_response(body) do
-    { :ok, dict } = body |> JSON.decode
-    dict
+    case body |> JSON.decode do
+      { :ok, dict } -> dict
+      { :unexpected_token, text } -> text
+    end
   end
 
   defp parse_request_token_response(body) do
@@ -89,7 +141,7 @@ defmodule XingEx.Client do
       oauth_consumer_key: Config.consumer[:key],
       oauth_token: token,
       oauth_signature_method: "PLAINTEXT",
-      oauth_signature: Config.consumer[:secret] <> "%26" <> token_secret,
+      oauth_signature: Config.consumer[:secret] <> "&" <> token_secret,
       oauth_nonce: "123",
       oauth_timestamp: (Timex.Time.now(:secs) |> Float.ceil |> integer_to_binary),
       oauth_version: "1.0"
